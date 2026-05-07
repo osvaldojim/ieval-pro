@@ -329,7 +329,7 @@ function HomeScreen({ onNav, session, onLogout, cloudMode }) {
         </div>
       </div>
 
-      <div style={{ padding:"0 16px",display:"flex",flexDirection:"column",gap:20,maxWidth:500,margin:"0 auto" }}>
+      <div style={{ padding:"0 16px",display:"flex",flexDirection:"column",gap:20,width:"100%" }}>
         <div>
           <SectionHeader>Acciones</SectionHeader>
           <Card>
@@ -590,7 +590,7 @@ function AdminPanel({ currentUser, onBack }) {
     <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <AppleHeader title="Usuarios" onBack={onBack}
         right={<button onClick={()=>setShowAdd(s=>!s)} style={{ background:"none",border:"none",color:T.blue,fontSize:16,cursor:"pointer",fontFamily:"inherit",fontWeight:500 }}>{showAdd?"Cancelar":"+ Nuevo"}</button>}/>
-      <div style={{ padding:"20px 16px",maxWidth:500,margin:"0 auto",display:"flex",flexDirection:"column",gap:20 }}>
+      <div style={{ padding:"20px 16px",width:"100%",display:"flex",flexDirection:"column",gap:20 }}>
         <CloudBadge/>
         {showAdd&&(
           <div>
@@ -667,7 +667,7 @@ function SearchScreen({ onBack }) {
   return (
     <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <AppleHeader title="Buscar" onBack={onBack}/>
-      <div style={{ padding:"16px",maxWidth:500,margin:"0 auto" }}>
+      <div style={{ padding:"16px",width:"100%" }}>
         <div style={{ display:"flex",gap:8,marginBottom:20 }}>
           <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Nombre, IMEI o modelo…"
             style={{ ...iStyle,fontSize:16,flex:1 }} autoFocus onKeyDown={e=>e.key==="Enter"&&doSearch()}/>
@@ -743,7 +743,7 @@ function ImeiCheckScreen({ onBack }) {
   return (
     <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <AppleHeader title="IMEI Check" onBack={onBack}/>
-      <div style={{ padding:"24px 16px",maxWidth:500,margin:"0 auto" }}>
+      <div style={{ padding:"24px 16px",width:"100%" }}>
         <div style={{ fontSize:15,color:T.label3,marginBottom:20,lineHeight:1.6 }}>Verifica si un IMEI está <span style={{ color:T.green,fontWeight:500 }}>Clean</span> o <span style={{ color:T.red,fontWeight:500 }}>Blacklisted</span>.</div>
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
           <input value={imei} onChange={e=>setImei(e.target.value.replace(/\D/g,"").slice(0,15))} placeholder="000000000000000"
@@ -832,7 +832,7 @@ function RegisterScreen({ onBack, onSave, session }) {
   if(showFinalize) return (
     <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <AppleHeader title="Finalizar" onBack={()=>setShowFinalize(false)}/>
-      <div style={{ padding:"20px 16px",maxWidth:500,margin:"0 auto",display:"flex",flexDirection:"column",gap:20 }}>
+      <div style={{ padding:"20px 16px",width:"100%",display:"flex",flexDirection:"column",gap:20 }}>
         <div>
           <SectionHeader>Resumen</SectionHeader>
           <Card style={{ padding:"4px 0" }}>
