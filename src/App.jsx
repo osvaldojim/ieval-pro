@@ -282,7 +282,7 @@ function HomeScreen({ onNav, session, onLogout, cloudMode }) {
   }, []);
 
   if (showInventory) return (
-    <div style={{ minHeight:"100vh",background:T.bg }}>
+    <div style={{ minHeight:"100vh",background:T.bg,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <AppleHeader title={`Inventario (${records.length})`} onBack={()=>setShowInventory(false)}/>
       <div style={{ padding:"16px" }}>
         {records.length===0
@@ -1104,7 +1104,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ fontFamily:"-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif",color:T.label,minHeight:"100vh",background:T.bg }}>
+    <div style={{ fontFamily:"-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif",color:T.label,minHeight:"100vh",background:T.bg,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <style>{`*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}select option{background:#1c1c1e;}input::placeholder,textarea::placeholder{color:rgba(235,235,245,0.3);}input:focus,textarea:focus,select:focus{outline:none;border-color:rgba(10,132,255,0.6)!important;}@keyframes spin{to{transform:rotate(360deg);}}::-webkit-scrollbar{width:0;}`}</style>
       {screen==="home"     &&<HomeScreen     onNav={nav} session={session} onLogout={logout} cloudMode={cloudMode}/>}
       {screen==="login"    &&<LoginScreen    onLogin={login} onBack={()=>setScreen("home")} onRegister={()=>setScreen("signup")}/>}
