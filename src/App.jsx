@@ -1,1 +1,1 @@
-cp ~/Desktop/ieval-pro/src/App.jsx ~/Desktop/ieval-pro/src/App.jsx.bak 2>/dev/null; pbpaste > src/App.jsx && npm run build
+pbpaste > src/App.jsx && git add . && git commit -m "fix App.jsx" && git push
