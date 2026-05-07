@@ -903,7 +903,7 @@ function RegisterScreen({ onBack, onSave, session }) {
   );
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:60,width:"100%" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:60,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <AppleHeader title="Registrar iPhone" onBack={onBack} subtitle={`Por: ${session?.name}`}/>
       <div style={{ display:"flex",background:T.bg,borderBottom:`1px solid ${T.sep}`,padding:"0 20px" }}>
         {["Dispositivo","Cliente","Chequeo"].map((t,i)=>(
