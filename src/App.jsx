@@ -438,7 +438,7 @@ function LoginScreen({ onLogin, onBack, onRegister }) {
     setLoading(false);
   };
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <AppleHeader title="Iniciar Sesión" onBack={onBack}/>
       <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 24px 60px" }}>
         <div style={{ width:"100%",maxWidth:380 }}>
@@ -500,7 +500,7 @@ function RegisterUserScreen({ onBack, onSuccess }) {
   };
 
   if (done) return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24 }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden",alignItems:"center",justifyContent:"center",padding:24 }}>
       <div style={{ maxWidth:380,width:"100%",textAlign:"center" }}>
         <div style={{ fontSize:72,marginBottom:20 }}>📧</div>
         <div style={{ fontSize:24,fontWeight:700,color:T.label,marginBottom:10 }}>¡Cuenta Creada!</div>
@@ -518,7 +518,7 @@ function RegisterUserScreen({ onBack, onSuccess }) {
   );
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <AppleHeader title="Crear Cuenta" onBack={onBack}/>
       <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 24px 60px" }}>
         <div style={{ width:"100%",maxWidth:380 }}>
@@ -1042,7 +1042,7 @@ function SuccessScreen({ rec, onHome }) {
   const sl=getScoreLabel(rec.score);
   const d=rec.device||{}; const cl=rec.client||{};
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24 }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden",alignItems:"center",justifyContent:"center",padding:24 }}>
       <div style={{ maxWidth:400,width:"100%",textAlign:"center" }}>
         <div style={{ width:80,height:80,borderRadius:40,background:"rgba(48,209,88,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,margin:"0 auto 20px" }}>✅</div>
         <div style={{ fontSize:28,fontWeight:700,color:T.label,letterSpacing:"-0.03em",marginBottom:6 }}>¡Guardado en la Nube!</div>
@@ -1096,7 +1096,7 @@ export default function App() {
   const handleRegisterSuccess=user=>{ login(user); };
 
   if(!dbReady) return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16 }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden",alignItems:"center",justifyContent:"center",gap:16 }}>
       <AppIcon size={72}/>
       <Spinner/>
       <div style={{ fontSize:15,color:T.label3 }}>Iniciando iEval Pro…</div>
