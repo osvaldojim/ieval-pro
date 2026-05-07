@@ -47,45 +47,14 @@ const supaRaw = async (method, table, body=null, query="") => {
 };
 
 const API = {
-  getUsers: async () => {
-    try { return await tryCloud(() => supaRaw("GET","app_users",null,"?order=created_at")); }
-    catch { return LS.get(LSKEYS.users, []); }
-  },
-  createUser: async (u) => {
-    try { return await tryCloud(() => supaRaw("POST","app_users",u)); }
-    catch { const users = LS.get(LSKEYS.users,[]); LS.set(LSKEYS.users,[...users,u]); return u; }
-  },
-  deleteUser: async (id) => {
-    try { return await tryCloud(() => supaRaw("DELETE","app_users",null,`?id=eq.${id}`)); }
-    catch { LS.set(LSKEYS.users, LS.get(LSKEYS.users,[]).filter(u=>u.id!==id)); }
-  },
-  findUser: async (username) => {
-    try { return await tryCloud(() => supaRaw("GET","app_users",null,`?username=eq.${username}&limit=1`)); }
-    catch { return LS.get(LSKEYS.users,[]).filter(u=>u.username===username); }
-  },
-  getRecords: async () => {
-    try { return await tryCloud(() => supaRaw("GET","records",null,"?order=date.desc")); }
-    catch { return LS.get(LSKEYS.records,[]); }
-  },
-  createRecord: async (r) => {
-    try { return await tryCloud(() => supaRaw("POST","records",r)); }
-    catch { const recs = LS.get(LSKEYS.records,[]); LS.set(LSKEYS.records,[r,...recs]); return r; }
-  },
-  searchRecords: async (q) => {
-    try {
-      return await tryCloud(() => supaRaw("GET","records",null,
-        `?or=(device->>model.ilike.*${q}*,client->>nombre.ilike.*${q}*,client->>apellido.ilike.*${q}*,device->>imei.ilike.*${q}*)&order=date.desc`));
-    } catch {
-      const all = LS.get(LSKEYS.records,[]);
-      const lq = q.toLowerCase();
-      return all.filter(r =>
-        (r.device?.model||"").toLowerCase().includes(lq) ||
-        (r.client?.nombre||"").toLowerCase().includes(lq) ||
-        (r.client?.apellido||"").toLowerCase().includes(lq) ||
-        (r.device?.imei||"").includes(q)
-      );
-    }
-  },
+  getUsers:    async () => { try { return await tryCloud(() => supaRaw("GET","app_users",null,"?order=created_at")); } catch { return LS.get(LSKEYS.users, []); } },
+  createUser:  async (u) => { try { return await tryCloud(() => supaRaw("POST","app_users",u)); } catch { const users=LS.get(LSKEYS.users,[]); LS.set(LSKEYS.users,[...users,u]); return u; } },
+  updateUser:  async (id,data) => { try { return await tryCloud(() => supaRaw("PATCH","app_users",data,`?id=eq.${id}`)); } catch { const users=LS.get(LSKEYS.users,[]); LS.set(LSKEYS.users,users.map(u=>u.id===id?{...u,...data}:u)); } },
+  deleteUser:  async (id) => { try { return await tryCloud(() => supaRaw("DELETE","app_users",null,`?id=eq.${id}`)); } catch { LS.set(LSKEYS.users, LS.get(LSKEYS.users,[]).filter(u=>u.id!==id)); } },
+  findUser:    async (username) => { try { return await tryCloud(() => supaRaw("GET","app_users",null,`?username=eq.${username}&limit=1`)); } catch { return LS.get(LSKEYS.users,[]).filter(u=>u.username===username); } },
+  getRecords:  async () => { try { return await tryCloud(() => supaRaw("GET","records",null,"?order=date.desc")); } catch { return LS.get(LSKEYS.records,[]); } },
+  createRecord:async (r) => { try { return await tryCloud(() => supaRaw("POST","records",r)); } catch { const recs=LS.get(LSKEYS.records,[]); LS.set(LSKEYS.records,[r,...recs]); return r; } },
+  searchRecords:async (q) => { try { return await tryCloud(() => supaRaw("GET","records",null,`?or=(device->>model.ilike.*${q}*,client->>nombre.ilike.*${q}*,client->>apellido.ilike.*${q}*,device->>imei.ilike.*${q}*)&order=date.desc`)); } catch { const all=LS.get(LSKEYS.records,[]); const lq=q.toLowerCase(); return all.filter(r=>(r.device?.model||"").toLowerCase().includes(lq)||(r.client?.nombre||"").toLowerCase().includes(lq)||(r.client?.apellido||"").toLowerCase().includes(lq)||(r.device?.imei||"").includes(q)); } },
 };
 
 
@@ -306,10 +275,42 @@ function AppIcon({ size=80 }) {
 function HomeScreen({ onNav, session, onLogout, cloudMode }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showInventory, setShowInventory] = useState(false);
 
   useEffect(() => {
     API.getRecords().then(r => { setRecords(r||[]); setLoading(false); }).catch(()=>setLoading(false));
   }, []);
+
+  if (showInventory) return (
+    <div style={{ minHeight:"100vh",background:T.bg }}>
+      <AppleHeader title={`Inventario (${records.length})`} onBack={()=>setShowInventory(false)}/>
+      <div style={{ padding:"16px" }}>
+        {records.length===0
+          ? <div style={{ textAlign:"center",color:T.label3,padding:"48px 0",fontSize:16 }}>Sin equipos registrados aún</div>
+          : <Card>
+              {records.map((rec,i)=>{
+                const sl=getScoreLabel(rec.score);
+                const d=rec.device||{}; const cl=rec.client||{};
+                return (
+                  <div key={rec.id} style={{ display:"flex",alignItems:"center",gap:12,padding:"13px 16px",borderBottom:i===records.length-1?'none':`1px solid ${T.sep}` }}>
+                    <div style={{ width:40,height:40,borderRadius:10,background:"#1c1c2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>📱</div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <div style={{ fontSize:15,fontWeight:500,color:T.label,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{d.model} {d.capacity}</div>
+                      <div style={{ fontSize:13,color:T.label3 }}>{cl.nombre} {cl.apellido}</div>
+                      <div style={{ fontSize:12,color:T.label4 }}>{new Date(rec.date).toLocaleDateString("es-DO")} · {rec.registered_by}</div>
+                    </div>
+                    <div style={{ textAlign:"right",flexShrink:0 }}>
+                      <div style={{ fontSize:15,fontWeight:600,color:T.green }}>{dop(rec.purchase_price)}</div>
+                      <div style={{ fontSize:12,color:sl.color }}>{sl.label}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </Card>
+        }
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
@@ -323,8 +324,8 @@ function HomeScreen({ onNav, session, onLogout, cloudMode }) {
         <div style={{ fontSize:34,fontWeight:700,color:T.label,letterSpacing:"-0.03em",lineHeight:1.1,marginBottom:6 }}>iEval Pro</div>
         <div style={{ fontSize:15,color:T.label3,marginBottom:14 }}>Compra y Evaluación de iPhones</div>
         <CloudBadge/>
-        <div style={{ marginTop:10,display:"inline-flex",alignItems:"center",gap:7,background:T.bg2,borderRadius:20,padding:"6px 14px",fontSize:14,color:T.label2,marginLeft:8 }}>
-          📦 {loading?"…":records.length} en inventario
+        <div onClick={()=>setShowInventory(true)} style={{ marginTop:10,display:"inline-flex",alignItems:"center",gap:7,background:T.bg2,borderRadius:20,padding:"6px 14px",fontSize:14,color:T.label2,marginLeft:8,cursor:"pointer" }}>
+          📦 {loading?"…":records.length} en inventario ›
         </div>
       </div>
 
@@ -426,7 +427,10 @@ function LoginScreen({ onLogin, onBack, onRegister }) {
     try {
       const results = await API.findUser(username.trim().toLowerCase());
       const user = results?.[0];
-      if(user && user.password===password) { onLogin(user); }
+      if(user && user.password===password) {
+        if(user.verified===false) { setError("Tu cuenta está pendiente de aprobación por un administrador."); setLoading(false); return; }
+        onLogin(user);
+      }
       else { setError("Usuario o contraseña incorrectos"); }
     } catch(e) {
       setError("Error de conexión. Verifica tu internet.");
@@ -464,24 +468,54 @@ function LoginScreen({ onLogin, onBack, onRegister }) {
 
 // ─── REGISTER USER SCREEN ─────────────────────────────────────────────────────
 function RegisterUserScreen({ onBack, onSuccess }) {
-  const [form, setForm] = useState({ name:"", username:"", password:"", confirm:"" });
+  const [form, setForm] = useState({ name:"", username:"", email:"", password:"", confirm:"" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const isValidEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
   const handleRegister = async () => {
-    if (!form.name||!form.username||!form.password) { setError("Completa todos los campos"); return; }
+    if (!form.name||!form.username||!form.email||!form.password) { setError("Completa todos los campos"); return; }
+    if (!isValidEmail(form.email)) { setError("Ingresa un correo electrónico válido"); return; }
     if (form.password !== form.confirm) { setError("Las contraseñas no coinciden"); return; }
     if (form.password.length < 6) { setError("La contraseña debe tener al menos 6 caracteres"); return; }
     setLoading(true); setError("");
     try {
       const existing = await API.findUser(form.username.trim().toLowerCase());
       if (existing?.length > 0) { setError("Ese nombre de usuario ya existe"); setLoading(false); return; }
-      const newUser = { id:`u-${Date.now()}`, username:form.username.trim().toLowerCase(), password:form.password, name:form.name.trim(), role:"empleado" };
+      const newUser = {
+        id: `u-${Date.now()}`,
+        username: form.username.trim().toLowerCase(),
+        password: form.password,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        role: "empleado",
+        verified: false,
+      };
       await API.createUser(newUser);
-      onSuccess(newUser);
+      setDone(true);
     } catch(e) { setError("Error al crear cuenta. Intenta de nuevo."); }
     setLoading(false);
   };
+
+  if (done) return (
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24 }}>
+      <div style={{ maxWidth:380,width:"100%",textAlign:"center" }}>
+        <div style={{ fontSize:72,marginBottom:20 }}>📧</div>
+        <div style={{ fontSize:24,fontWeight:700,color:T.label,marginBottom:10 }}>¡Cuenta Creada!</div>
+        <div style={{ fontSize:15,color:T.label3,marginBottom:28,lineHeight:1.6 }}>
+          Tu solicitud fue enviada. Un administrador de <strong style={{ color:T.label }}>LuzConexion</strong> debe aprobar tu cuenta antes de que puedas acceder.
+        </div>
+        <div style={{ background:T.bg2,borderRadius:14,padding:"16px",marginBottom:24,textAlign:"left" }}>
+          <div style={{ fontSize:13,color:T.label3,marginBottom:4 }}>Cuenta registrada como</div>
+          <div style={{ fontSize:16,fontWeight:600,color:T.label }}>{form.name}</div>
+          <div style={{ fontSize:14,color:T.label3 }}>@{form.username} · {form.email}</div>
+        </div>
+        <AppleBtn onClick={onBack}>Volver al Login</AppleBtn>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" }}>
@@ -498,6 +532,8 @@ function RegisterUserScreen({ onBack, onSuccess }) {
               placeholder="Nombre completo" style={{ ...iStyle,fontSize:17 }}/>
             <input value={form.username} onChange={e=>setForm(p=>({...p,username:e.target.value}))}
               placeholder="Nombre de usuario" style={{ ...iStyle,fontSize:17 }} autoCapitalize="none"/>
+            <input type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
+              placeholder="Correo electrónico" style={{ ...iStyle,fontSize:17 }} autoCapitalize="none"/>
             <input type="password" value={form.password} onChange={e=>setForm(p=>({...p,password:e.target.value}))}
               placeholder="Contraseña (mín. 6 caracteres)" style={{ ...iStyle,fontSize:17 }}/>
             <input type="password" value={form.confirm} onChange={e=>setForm(p=>({...p,confirm:e.target.value}))}
@@ -506,12 +542,12 @@ function RegisterUserScreen({ onBack, onSuccess }) {
             {error&&<div style={{ fontSize:14,color:T.red,textAlign:"center",padding:"10px 14px",background:"rgba(255,69,58,0.1)",borderRadius:10 }}>{error}</div>}
             <div style={{ marginTop:4 }}>
               {loading?<div style={{ padding:16,textAlign:"center" }}><Spinner/></div>
-                :<AppleBtn onClick={handleRegister} disabled={!form.name||!form.username||!form.password||!form.confirm} color={T.green}>
+                :<AppleBtn onClick={handleRegister} disabled={!form.name||!form.username||!form.email||!form.password||!form.confirm} color={T.green}>
                   Crear Cuenta
                 </AppleBtn>}
             </div>
             <div style={{ padding:"12px 14px",borderRadius:12,background:T.bg2,fontSize:13,color:T.label3,lineHeight:1.6,textAlign:"center" }}>
-              ℹ️ Tu cuenta será de tipo <strong style={{ color:T.label }}>Empleado</strong>. Un administrador puede cambiar tu rol si es necesario.
+              ℹ️ Tu cuenta será revisada por un <strong style={{ color:T.label }}>Administrador</strong> antes de activarse.
             </div>
             <div style={{ textAlign:"center" }}>
               <span style={{ fontSize:14,color:T.label3 }}>¿Ya tienes cuenta? </span>
@@ -581,17 +617,28 @@ function AdminPanel({ currentUser, onBack }) {
             <Card>
               {users.map((u,i)=>(
                 <div key={u.id} style={{ display:"flex",alignItems:"center",gap:12,padding:"13px 16px",borderBottom:i===users.length-1?'none':`1px solid ${T.sep}` }}>
-                  <div style={{ width:40,height:40,borderRadius:20,background:u.role==="admin"?"rgba(255,159,10,0.15)":T.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>
-                    {u.role==="admin"?"👑":"👤"}
+                  <div style={{ width:40,height:40,borderRadius:20,background:u.role==="admin"?"rgba(255,159,10,0.15)":u.verified===false?"rgba(255,69,58,0.15)":T.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>
+                    {u.role==="admin"?"👑":u.verified===false?"⏳":"👤"}
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
                     <div style={{ fontSize:15,fontWeight:500,color:T.label }}>{u.name}</div>
                     <div style={{ fontSize:13,color:T.label3 }}>@{u.username}</div>
+                    {u.email&&<div style={{ fontSize:12,color:T.label4 }}>{u.email}</div>}
                   </div>
                   <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5 }}>
                     <div style={{ fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:20,background:u.role==="admin"?"rgba(255,159,10,0.15)":"rgba(10,132,255,0.12)",color:u.role==="admin"?T.orange:T.blue }}>
                       {u.role==="admin"?"Admin":"Empleado"}
                     </div>
+                    {u.verified===false&&u.id!==currentUser.id&&(
+                      <button onClick={async()=>{
+                        try {
+                          await API.updateUser(u.id,{ verified:true });
+                          setUsers(prev=>prev.map(x=>x.id===u.id?{...x,verified:true}:x));
+                        } catch(e){ alert("Error al aprobar"); }
+                      }} style={{ fontSize:12,color:T.green,background:"rgba(48,209,88,0.1)",border:"1px solid rgba(48,209,88,0.3)",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontFamily:"inherit",fontWeight:600 }}>
+                        ✓ Aprobar
+                      </button>
+                    )}
                     {u.id!==currentUser.id
                       ?<button onClick={()=>deleteUser(u.id)} style={{ fontSize:12,color:T.red,background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"inherit" }}>Eliminar</button>
                       :<div style={{ fontSize:11,color:T.label4 }}>Tú</div>}
@@ -856,7 +903,7 @@ function RegisterScreen({ onBack, onSave, session }) {
   );
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:60 }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:60,width:"100%" }}>
       <AppleHeader title="Registrar iPhone" onBack={onBack} subtitle={`Por: ${session?.name}`}/>
       <div style={{ display:"flex",background:T.bg,borderBottom:`1px solid ${T.sep}`,padding:"0 20px" }}>
         {["Dispositivo","Cliente","Chequeo"].map((t,i)=>(
@@ -864,7 +911,7 @@ function RegisterScreen({ onBack, onSave, session }) {
         ))}
       </div>
 
-      <div style={{ padding:"20px 16px",maxWidth:500,margin:"0 auto",display:"flex",flexDirection:"column",gap:20 }}>
+      <div style={{ padding:"20px 16px",width:"100%",boxSizing:"border-box",display:"flex",flexDirection:"column",gap:20 }}>
         {tab===0&&(<>
           <div>
             <SectionHeader>Información del Equipo</SectionHeader>
