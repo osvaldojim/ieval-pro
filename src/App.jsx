@@ -419,7 +419,7 @@ function HomeScreen({ onNav, session, onLogout, cloudMode }) {
 }
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────────
-function LoginScreen({ onLogin, onBack }) {
+function LoginScreen({ onLogin, onBack, onRegister }) {
   const [username,setUsername]=useState(""); const [password,setPassword]=useState(""); const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
   const handleLogin=async()=>{
     setLoading(true); setError("");
@@ -441,7 +441,7 @@ function LoginScreen({ onLogin, onBack }) {
           <div style={{ textAlign:"center",marginBottom:40 }}>
             <div style={{ display:"flex",justifyContent:"center",marginBottom:16 }}><AppIcon size={72}/></div>
             <div style={{ fontSize:24,fontWeight:700,color:T.label,letterSpacing:"-0.02em",marginBottom:6 }}>Bienvenido</div>
-            <div style={{ fontSize:15,color:T.label3 }}>Solo empleados autorizados</div>
+            <div style={{ fontSize:15,color:T.label3 }}>Ingresa con tu cuenta de LuzConexion</div>
           </div>
           <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
             <input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Usuario" style={{ ...iStyle,fontSize:17 }} autoCapitalize="none" onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
@@ -450,6 +450,72 @@ function LoginScreen({ onLogin, onBack }) {
             <div style={{ marginTop:4 }}>
               {loading?<div style={{ padding:16,textAlign:"center" }}><Spinner/></div>
                 :<AppleBtn onClick={handleLogin} disabled={!username||!password}>Entrar</AppleBtn>}
+            </div>
+            <div style={{ textAlign:"center",marginTop:8 }}>
+              <span style={{ fontSize:14,color:T.label3 }}>¿No tienes cuenta? </span>
+              <button onClick={onRegister} style={{ fontSize:14,color:T.blue,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600 }}>Regístrate</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── REGISTER USER SCREEN ─────────────────────────────────────────────────────
+function RegisterUserScreen({ onBack, onSuccess }) {
+  const [form, setForm] = useState({ name:"", username:"", password:"", confirm:"" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!form.name||!form.username||!form.password) { setError("Completa todos los campos"); return; }
+    if (form.password !== form.confirm) { setError("Las contraseñas no coinciden"); return; }
+    if (form.password.length < 6) { setError("La contraseña debe tener al menos 6 caracteres"); return; }
+    setLoading(true); setError("");
+    try {
+      const existing = await API.findUser(form.username.trim().toLowerCase());
+      if (existing?.length > 0) { setError("Ese nombre de usuario ya existe"); setLoading(false); return; }
+      const newUser = { id:`u-${Date.now()}`, username:form.username.trim().toLowerCase(), password:form.password, name:form.name.trim(), role:"empleado" };
+      await API.createUser(newUser);
+      onSuccess(newUser);
+    } catch(e) { setError("Error al crear cuenta. Intenta de nuevo."); }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" }}>
+      <AppleHeader title="Crear Cuenta" onBack={onBack}/>
+      <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 24px 60px" }}>
+        <div style={{ width:"100%",maxWidth:380 }}>
+          <div style={{ textAlign:"center",marginBottom:32 }}>
+            <div style={{ display:"flex",justifyContent:"center",marginBottom:16 }}><AppIcon size={72}/></div>
+            <div style={{ fontSize:24,fontWeight:700,color:T.label,letterSpacing:"-0.02em",marginBottom:6 }}>Nueva Cuenta</div>
+            <div style={{ fontSize:15,color:T.label3 }}>Únete al equipo de LuzConexion</div>
+          </div>
+          <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+            <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}
+              placeholder="Nombre completo" style={{ ...iStyle,fontSize:17 }}/>
+            <input value={form.username} onChange={e=>setForm(p=>({...p,username:e.target.value}))}
+              placeholder="Nombre de usuario" style={{ ...iStyle,fontSize:17 }} autoCapitalize="none"/>
+            <input type="password" value={form.password} onChange={e=>setForm(p=>({...p,password:e.target.value}))}
+              placeholder="Contraseña (mín. 6 caracteres)" style={{ ...iStyle,fontSize:17 }}/>
+            <input type="password" value={form.confirm} onChange={e=>setForm(p=>({...p,confirm:e.target.value}))}
+              placeholder="Confirmar contraseña" style={{ ...iStyle,fontSize:17 }}
+              onKeyDown={e=>e.key==="Enter"&&handleRegister()}/>
+            {error&&<div style={{ fontSize:14,color:T.red,textAlign:"center",padding:"10px 14px",background:"rgba(255,69,58,0.1)",borderRadius:10 }}>{error}</div>}
+            <div style={{ marginTop:4 }}>
+              {loading?<div style={{ padding:16,textAlign:"center" }}><Spinner/></div>
+                :<AppleBtn onClick={handleRegister} disabled={!form.name||!form.username||!form.password||!form.confirm} color={T.green}>
+                  Crear Cuenta
+                </AppleBtn>}
+            </div>
+            <div style={{ padding:"12px 14px",borderRadius:12,background:T.bg2,fontSize:13,color:T.label3,lineHeight:1.6,textAlign:"center" }}>
+              ℹ️ Tu cuenta será de tipo <strong style={{ color:T.label }}>Empleado</strong>. Un administrador puede cambiar tu rol si es necesario.
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <span style={{ fontSize:14,color:T.label3 }}>¿Ya tienes cuenta? </span>
+              <button onClick={onBack} style={{ fontSize:14,color:T.blue,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",fontWeight:600 }}>Inicia sesión</button>
             </div>
           </div>
         </div>
@@ -980,6 +1046,7 @@ export default function App() {
   const logout=()=>{ localStorage.removeItem("ieval_session"); setSession(null); };
   const nav=key=>{ if((key==="register"||key==="search")&&!session){ setLoginTarget(key); setScreen("login"); return; } setScreen(key); };
   const handleSave=rec=>{ setSavedRec(rec); setScreen("success"); };
+  const handleRegisterSuccess=user=>{ login(user); };
 
   if(!dbReady) return (
     <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16 }}>
@@ -993,7 +1060,8 @@ export default function App() {
     <div style={{ fontFamily:"-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif",color:T.label,minHeight:"100vh",background:T.bg }}>
       <style>{`*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}select option{background:#1c1c1e;}input::placeholder,textarea::placeholder{color:rgba(235,235,245,0.3);}input:focus,textarea:focus,select:focus{outline:none;border-color:rgba(10,132,255,0.6)!important;}@keyframes spin{to{transform:rotate(360deg);}}::-webkit-scrollbar{width:0;}`}</style>
       {screen==="home"     &&<HomeScreen     onNav={nav} session={session} onLogout={logout} cloudMode={cloudMode}/>}
-      {screen==="login"    &&<LoginScreen    onLogin={login} onBack={()=>setScreen("home")}/>}
+      {screen==="login"    &&<LoginScreen    onLogin={login} onBack={()=>setScreen("home")} onRegister={()=>setScreen("signup")}/>}
+      {screen==="signup"   &&<RegisterUserScreen onBack={()=>setScreen("login")} onSuccess={handleRegisterSuccess}/>}
       {screen==="search"   &&<SearchScreen   onBack={()=>setScreen("home")}/>}
       {screen==="imei"     &&<ImeiCheckScreen onBack={()=>setScreen("home")}/>}
       {screen==="register" &&<RegisterScreen  onBack={()=>setScreen("home")} onSave={handleSave} session={session}/>}
