@@ -1,61 +1,74 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, query, where, orderBy, or } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// ─── SUPABASE CONFIG ──────────────────────────────────────────────────────────
-const SUPA_URL = "https://rzeczwoqwgigupesbqekp.supabase.co";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZWN3b3F3Z2lndXBlc2JxZWtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMjIyOTAsImV4cCI6MjA5MzY5ODI5MH0.dtQAx6MquBUDt_gvY9gmdPSFunHXHNXMqh6PT5R8dSk";
+// ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyBCx8aBwZwCkaFVbW-nh8K1xUp9jgMmGwU",
+  authDomain: "ieval-pro.firebaseapp.com",
+  projectId: "ieval-pro",
+  storageBucket: "ieval-pro.firebasestorage.app",
+  messagingSenderId: "189597065006",
+  appId: "1:189597065006:web:dee92d681102bf02e224bf",
+};
 
-// ─── LOCAL STORAGE DB (fallback cuando no hay conexión a Supabase) ─────────────
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+
+// ─── FIREBASE API ─────────────────────────────────────────────────────────────
+const API = {
+  getUsers: async () => {
+    const snap = await getDocs(collection(db, "app_users"));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+  findUser: async (username) => {
+    const q = query(collection(db, "app_users"), where("username", "==", username));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+  createUser: async (user) => {
+    const { id, ...data } = user;
+    await addDoc(collection(db, "app_users"), { ...data, fireId: id });
+    return user;
+  },
+  updateUser: async (id, data) => {
+    const q = query(collection(db, "app_users"), where("fireId", "==", id));
+    const snap = await getDocs(q);
+    if (!snap.empty) await updateDoc(snap.docs[0].ref, data);
+  },
+  deleteUser: async (id) => {
+    const q = query(collection(db, "app_users"), where("fireId", "==", id));
+    const snap = await getDocs(q);
+    if (!snap.empty) await deleteDoc(snap.docs[0].ref);
+  },
+  getRecords: async () => {
+    const snap = await getDocs(query(collection(db, "records"), orderBy("date", "desc")));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+  createRecord: async (rec) => {
+    await addDoc(collection(db, "records"), rec);
+    return rec;
+  },
+  searchRecords: async (q) => {
+    const snap = await getDocs(collection(db, "records"));
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const lq = q.toLowerCase();
+    return all.filter(r =>
+      (r.device?.model||"").toLowerCase().includes(lq) ||
+      (r.client?.nombre||"").toLowerCase().includes(lq) ||
+      (r.client?.apellido||"").toLowerCase().includes(lq) ||
+      (r.device?.imei||"").includes(q)
+    ).sort((a,b) => new Date(b.date) - new Date(a.date));
+  },
+};
+
+// ─── LOCAL STORAGE (session only) ─────────────────────────────────────────────
 const LS = {
   get: (k, fb) => { try { return JSON.parse(localStorage.getItem(k) ?? "null") ?? fb; } catch { return fb; } },
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const LSKEYS = { users: "ieval_users", records: "ieval_records" };
 
-const initLocalUsers = () => {
-  const u = LS.get(LSKEYS.users, null);
-  if (!u) LS.set(LSKEYS.users, [{ id:"admin-1", username:"admin", password:"admin123", name:"Administrador", role:"admin", created_at: new Date().toISOString() }]);
-};
 
-// ─── SMART API — intenta Supabase, cae en localStorage si hay CORS ─────────────
-let _useCloud = null; // null = no detectado aún
-
-const tryCloud = async (fn) => {
-  try {
-    const result = await fn();
-    _useCloud = true;
-    return result;
-  } catch (e) {
-    _useCloud = false;
-    throw e;
-  }
-};
-
-const supaRaw = async (method, table, body=null, query="") => {
-  const res = await fetch(`${SUPA_URL}/rest/v1/${table}${query}`, {
-    method,
-    headers: {
-      "apikey": SUPA_KEY,
-      "Authorization": `Bearer ${SUPA_KEY}`,
-      "Content-Type": "application/json",
-      "Prefer": method==="POST" ? "return=representation" : "",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-};
-
-const API = {
-  getUsers:    async () => { try { return await tryCloud(() => supaRaw("GET","app_users",null,"?order=created_at")); } catch { return LS.get(LSKEYS.users, []); } },
-  createUser:  async (u) => { try { return await tryCloud(() => supaRaw("POST","app_users",u)); } catch { const users=LS.get(LSKEYS.users,[]); LS.set(LSKEYS.users,[...users,u]); return u; } },
-  updateUser:  async (id,data) => { try { return await tryCloud(() => supaRaw("PATCH","app_users",data,`?id=eq.${id}`)); } catch { const users=LS.get(LSKEYS.users,[]); LS.set(LSKEYS.users,users.map(u=>u.id===id?{...u,...data}:u)); } },
-  deleteUser:  async (id) => { try { return await tryCloud(() => supaRaw("DELETE","app_users",null,`?id=eq.${id}`)); } catch { LS.set(LSKEYS.users, LS.get(LSKEYS.users,[]).filter(u=>u.id!==id)); } },
-  findUser:    async (username) => { try { return await tryCloud(() => supaRaw("GET","app_users",null,`?username=eq.${username}&limit=1`)); } catch { return LS.get(LSKEYS.users,[]).filter(u=>u.username===username); } },
-  getRecords:  async () => { try { return await tryCloud(() => supaRaw("GET","records",null,"?order=date.desc")); } catch { return LS.get(LSKEYS.records,[]); } },
-  createRecord:async (r) => { try { return await tryCloud(() => supaRaw("POST","records",r)); } catch { const recs=LS.get(LSKEYS.records,[]); LS.set(LSKEYS.records,[r,...recs]); return r; } },
-  searchRecords:async (q) => { try { return await tryCloud(() => supaRaw("GET","records",null,`?or=(device->>model.ilike.*${q}*,client->>nombre.ilike.*${q}*,client->>apellido.ilike.*${q}*,device->>imei.ilike.*${q}*)&order=date.desc`)); } catch { const all=LS.get(LSKEYS.records,[]); const lq=q.toLowerCase(); return all.filter(r=>(r.device?.model||"").toLowerCase().includes(lq)||(r.client?.nombre||"").toLowerCase().includes(lq)||(r.client?.apellido||"").toLowerCase().includes(lq)||(r.device?.imei||"").includes(q)); } },
-};
 
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -218,10 +231,10 @@ function Spinner({ size=40, color=T.blue }) {
   return <div style={{ width:size,height:size,borderRadius:size/2,border:`3px solid ${T.bg3}`,borderTopColor:color,animation:"spin 0.8s linear infinite",margin:"0 auto" }}/>;
 }
 
-function CloudBadge({ cloudMode=false }) {
+function CloudBadge() {
   return (
-    <div style={{ display:"inline-flex",alignItems:"center",gap:5,background:cloudMode?"rgba(10,132,255,0.12)":"rgba(255,159,10,0.12)",borderRadius:20,padding:"3px 10px",fontSize:12,color:cloudMode?"#0a84ff":"#ff9f0a" }}>
-      {cloudMode ? "☁️ Base de datos en la nube" : "📱 Modo local — sube a Netlify para sincronizar"}
+    <div style={{ display:"inline-flex",alignItems:"center",gap:5,background:"rgba(10,132,255,0.12)",borderRadius:20,padding:"3px 10px",fontSize:12,color:T.blue }}>
+      ☁️ Firebase — Base de datos en la nube
     </div>
   );
 }
@@ -272,7 +285,7 @@ function AppIcon({ size=80 }) {
 }
 
 // ─── HOME SCREEN ──────────────────────────────────────────────────────────────
-function HomeScreen({ onNav, session, onLogout, cloudMode }) {
+function HomeScreen({ onNav, session, onLogout }) {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showInventory, setShowInventory] = useState(false);
@@ -282,7 +295,7 @@ function HomeScreen({ onNav, session, onLogout, cloudMode }) {
   }, []);
 
   if (showInventory) return (
-    <div style={{ minHeight:"100vh",background:T.bg,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg }}>
       <AppleHeader title={`Inventario (${records.length})`} onBack={()=>setShowInventory(false)}/>
       <div style={{ padding:"16px" }}>
         {records.length===0
@@ -313,7 +326,7 @@ function HomeScreen({ onNav, session, onLogout, cloudMode }) {
   );
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 20px 0" }}>
         <div style={{ fontSize:13,color:T.label3 }}>{session?`${session.role==="admin"?"👑 ":""}${session.name}`:""}</div>
         {session&&<button onClick={onLogout} style={{ fontSize:14,color:T.blue,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit" }}>Salir</button>}
@@ -329,7 +342,7 @@ function HomeScreen({ onNav, session, onLogout, cloudMode }) {
         </div>
       </div>
 
-      <div style={{ padding:"0 16px",display:"flex",flexDirection:"column",gap:20,width:"100%" }}>
+      <div style={{ padding:"0 16px",display:"flex",flexDirection:"column",gap:20,maxWidth:"100%" }}>
         <div>
           <SectionHeader>Acciones</SectionHeader>
           <Card>
@@ -438,7 +451,7 @@ function LoginScreen({ onLogin, onBack, onRegister }) {
     setLoading(false);
   };
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" }}>
       <AppleHeader title="Iniciar Sesión" onBack={onBack}/>
       <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 24px 60px" }}>
         <div style={{ width:"100%",maxWidth:380 }}>
@@ -500,7 +513,7 @@ function RegisterUserScreen({ onBack, onSuccess }) {
   };
 
   if (done) return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden",alignItems:"center",justifyContent:"center",padding:24 }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24 }}>
       <div style={{ maxWidth:380,width:"100%",textAlign:"center" }}>
         <div style={{ fontSize:72,marginBottom:20 }}>📧</div>
         <div style={{ fontSize:24,fontWeight:700,color:T.label,marginBottom:10 }}>¡Cuenta Creada!</div>
@@ -518,7 +531,7 @@ function RegisterUserScreen({ onBack, onSuccess }) {
   );
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column" }}>
       <AppleHeader title="Crear Cuenta" onBack={onBack}/>
       <div style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 24px 60px" }}>
         <div style={{ width:"100%",maxWidth:380 }}>
@@ -587,10 +600,10 @@ function AdminPanel({ currentUser, onBack }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <AppleHeader title="Usuarios" onBack={onBack}
         right={<button onClick={()=>setShowAdd(s=>!s)} style={{ background:"none",border:"none",color:T.blue,fontSize:16,cursor:"pointer",fontFamily:"inherit",fontWeight:500 }}>{showAdd?"Cancelar":"+ Nuevo"}</button>}/>
-      <div style={{ padding:"20px 16px",width:"100%",display:"flex",flexDirection:"column",gap:20 }}>
+      <div style={{ padding:"20px 16px",maxWidth:"100%",display:"flex",flexDirection:"column",gap:20 }}>
         <CloudBadge/>
         {showAdd&&(
           <div>
@@ -665,9 +678,9 @@ function SearchScreen({ onBack }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <AppleHeader title="Buscar" onBack={onBack}/>
-      <div style={{ padding:"16px",width:"100%" }}>
+      <div style={{ padding:"16px",maxWidth:"100%" }}>
         <div style={{ display:"flex",gap:8,marginBottom:20 }}>
           <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Nombre, IMEI o modelo…"
             style={{ ...iStyle,fontSize:16,flex:1 }} autoFocus onKeyDown={e=>e.key==="Enter"&&doSearch()}/>
@@ -741,9 +754,9 @@ function ImeiCheckScreen({ onBack }) {
     setLoading(false);
   };
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <AppleHeader title="IMEI Check" onBack={onBack}/>
-      <div style={{ padding:"24px 16px",width:"100%" }}>
+      <div style={{ padding:"24px 16px",maxWidth:"100%" }}>
         <div style={{ fontSize:15,color:T.label3,marginBottom:20,lineHeight:1.6 }}>Verifica si un IMEI está <span style={{ color:T.green,fontWeight:500 }}>Clean</span> o <span style={{ color:T.red,fontWeight:500 }}>Blacklisted</span>.</div>
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
           <input value={imei} onChange={e=>setImei(e.target.value.replace(/\D/g,"").slice(0,15))} placeholder="000000000000000"
@@ -830,9 +843,9 @@ function RegisterScreen({ onBack, onSave, session }) {
   const handleDiscard=()=>{ if(window.confirm("¿Eliminar todo el registro sin guardar?")) onBack(); };
 
   if(showFinalize) return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40 }}>
       <AppleHeader title="Finalizar" onBack={()=>setShowFinalize(false)}/>
-      <div style={{ padding:"20px 16px",width:"100%",display:"flex",flexDirection:"column",gap:20 }}>
+      <div style={{ padding:"20px 16px",maxWidth:"100%",display:"flex",flexDirection:"column",gap:20 }}>
         <div>
           <SectionHeader>Resumen</SectionHeader>
           <Card style={{ padding:"4px 0" }}>
@@ -903,7 +916,7 @@ function RegisterScreen({ onBack, onSave, session }) {
   );
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:60,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:60,width:"100%" }}>
       <AppleHeader title="Registrar iPhone" onBack={onBack} subtitle={`Por: ${session?.name}`}/>
       <div style={{ display:"flex",background:T.bg,borderBottom:`1px solid ${T.sep}`,padding:"0 20px" }}>
         {["Dispositivo","Cliente","Chequeo"].map((t,i)=>(
@@ -1042,7 +1055,7 @@ function SuccessScreen({ rec, onHome }) {
   const sl=getScoreLabel(rec.score);
   const d=rec.device||{}; const cl=rec.client||{};
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden",alignItems:"center",justifyContent:"center",padding:24 }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24 }}>
       <div style={{ maxWidth:400,width:"100%",textAlign:"center" }}>
         <div style={{ width:80,height:80,borderRadius:40,background:"rgba(48,209,88,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,margin:"0 auto 20px" }}>✅</div>
         <div style={{ fontSize:28,fontWeight:700,color:T.label,letterSpacing:"-0.03em",marginBottom:6 }}>¡Guardado en la Nube!</div>
@@ -1067,23 +1080,20 @@ function SuccessScreen({ rec, onHome }) {
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [screen,setScreen]=useState("home");
-  const [session,setSession]=useState(getSession);
+  const [session,setSession]=useState(()=>{ try { return JSON.parse(localStorage.getItem("ieval_session")||"null"); } catch { return null; } });
   const [savedRec,setSavedRec]=useState(null);
   const [loginTarget,setLoginTarget]=useState(null);
   const [dbReady,setDbReady]=useState(false);
-  const [cloudMode,setCloudMode]=useState(false);
 
   useEffect(()=>{
-    initLocalUsers();
+    // Create admin user if none exists
     const init=async()=>{
       try {
-        const users=await API.getUsers();
-        const isCloud=_useCloud===true;
-        setCloudMode(isCloud);
-        if(isCloud&&(!users||users.length===0)){
-          await API.createUser({ id:"admin-1",username:"admin",password:"admin123",name:"Administrador",role:"admin" });
+        const users = await API.getUsers();
+        if(!users||users.length===0){
+          await API.createUser({ id:"admin-1", username:"admin", password:"admin123", name:"Administrador", role:"admin", verified:true, fireId:"admin-1" });
         }
-      } catch(e){}
+      } catch(e){ console.log("Init error:", e); }
       setDbReady(true);
     };
     init();
@@ -1096,17 +1106,17 @@ export default function App() {
   const handleRegisterSuccess=user=>{ login(user); };
 
   if(!dbReady) return (
-    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",width:"100vw",maxWidth:"100vw",overflowX:"hidden",alignItems:"center",justifyContent:"center",gap:16 }}>
+    <div style={{ minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16 }}>
       <AppIcon size={72}/>
       <Spinner/>
-      <div style={{ fontSize:15,color:T.label3 }}>Iniciando iEval Pro…</div>
+      <div style={{ fontSize:15,color:T.label3 }}>Conectando con Firebase…</div>
     </div>
   );
 
   return (
-    <div style={{ fontFamily:"-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif",color:T.label,minHeight:"100vh",background:T.bg,width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ fontFamily:"-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',sans-serif",color:T.label,minHeight:"100vh",background:T.bg }}>
       <style>{`*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}select option{background:#1c1c1e;}input::placeholder,textarea::placeholder{color:rgba(235,235,245,0.3);}input:focus,textarea:focus,select:focus{outline:none;border-color:rgba(10,132,255,0.6)!important;}@keyframes spin{to{transform:rotate(360deg);}}::-webkit-scrollbar{width:0;}`}</style>
-      {screen==="home"     &&<HomeScreen     onNav={nav} session={session} onLogout={logout} cloudMode={cloudMode}/>}
+      {screen==="home"     &&<HomeScreen     onNav={nav} session={session} onLogout={logout}/>}
       {screen==="login"    &&<LoginScreen    onLogin={login} onBack={()=>setScreen("home")} onRegister={()=>setScreen("signup")}/>}
       {screen==="signup"   &&<RegisterUserScreen onBack={()=>setScreen("login")} onSuccess={handleRegisterSuccess}/>}
       {screen==="search"   &&<SearchScreen   onBack={()=>setScreen("home")}/>}
