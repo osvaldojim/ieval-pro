@@ -209,7 +209,7 @@ function AppleBtn({ children, onClick, disabled, color=T.blue, style:s={} }) {
 function AppleHeader({ title, onBack, right, subtitle }) {
   return (
     <div style={{ background:T.bg,borderBottom:`1px solid ${T.sep}`,padding:"14px 20px 12px",display:"flex",alignItems:"center",gap:10,position:"sticky",top:0,zIndex:10 }}>
-      {onBack&&<button onClick={onBack} style={{ background:"transparent",border:"none",color:T.blue,fontSize:22,cursor:"pointer",padding:"0 4px 0 0",fontFamily:"inherit",lineHeight:1,flexShrink:0 }}>‹</button>}
+      {onBack&&<button onClick={onBack} style={{ background:"transparent",border:"none",color:T.blue,fontSize:17,cursor:"pointer",padding:"8px 12px",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4 }}><span style={{fontSize:22}}>‹</span><span>Atrás</span></button>}
       <div style={{ flex:1 }}>
         <div style={{ fontSize:17,fontWeight:600,color:T.label,letterSpacing:"-0.02em" }}>{title}</div>
         {subtitle&&<div style={{ fontSize:12,color:T.label3,marginTop:1 }}>{subtitle}</div>}
@@ -917,7 +917,7 @@ function RegisterScreen({ onBack, onSave, session }) {
 
   return (
     <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:60,width:"100%" }}>
-      <AppleHeader title="Registrar iPhone" onBack={onBack} subtitle={`Por: ${session?.name}`}/>
+      <AppleHeader title="Registrar iPhone" onBack={onBack} />
       <div style={{ display:"flex",background:T.bg,borderBottom:`1px solid ${T.sep}`,padding:"0 20px" }}>
         {["Dispositivo","Cliente","Chequeo"].map((t,i)=>(
           <button key={i} onClick={()=>setTab(i)} style={{ flex:1,padding:"10px 4px",background:"transparent",border:"none",cursor:"pointer",color:tab===i?T.blue:T.label3,fontSize:14,fontWeight:tab===i?600:400,fontFamily:"inherit",borderBottom:`2px solid ${tab===i?T.blue:"transparent"}`,transition:"all 0.2s" }}>{t}</button>
