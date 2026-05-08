@@ -4,12 +4,12 @@ import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, q
 
 // ─── FIREBASE CONFIG ──────────────────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  apiKey: "AIzaSyBCx8aBwZwCkaFVbW-nh8K1xUp9jgMmGwU",
   authDomain: "ieval-pro.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  projectId: "ieval-pro",
   storageBucket: "ieval-pro.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  messagingSenderId: "189597065006",
+  appId: "1:189597065006:web:dee92d681102bf02e224bf",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
