@@ -208,7 +208,7 @@ function AppleBtn({ children, onClick, disabled, color=T.blue, style:s={} }) {
 
 function AppleHeader({ title, onBack, right, subtitle }) {
   return (
-    <div style={{ background:T.bg,borderBottom:`1px solid ${T.sep}`,padding:"14px 20px 12px",display:"flex",alignItems:"center",gap:10,position:"sticky",top:0,zIndex:10 }}>
+    <div style={{ background:T.bg,borderBottom:`1px solid ${T.sep}`,paddingTop:"max(14px, env(safe-area-inset-top))",paddingLeft:"16px",paddingRight:"16px",paddingBottom:"12px",display:"flex",alignItems:"center",gap:10,position:"sticky",top:0,zIndex:10 }}>
       {onBack&&<button onClick={onBack} style={{ background:"transparent",border:"none",color:T.blue,fontSize:17,cursor:"pointer",padding:"8px 12px",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4 }}><span style={{fontSize:22}}>‹</span><span>Atrás</span></button>}
       <div style={{ flex:1 }}>
         <div style={{ fontSize:17,fontWeight:600,color:T.label,letterSpacing:"-0.02em" }}>{title}</div>
