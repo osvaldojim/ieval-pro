@@ -337,9 +337,9 @@ function HomeScreen({ onNav, session, onLogout }) {
         <div style={{ fontSize:34,fontWeight:700,color:T.label,letterSpacing:"-0.03em",lineHeight:1.1,marginBottom:6 }}>iEval Pro</div>
         <div style={{ fontSize:15,color:T.label3,marginBottom:14 }}>Compra y Evaluación de iPhones</div>
         <CloudBadge/>
-        <div onClick={()=>setShowInventory(true)} style={{ marginTop:10,display:"inline-flex",alignItems:"center",gap:7,background:T.bg2,borderRadius:20,padding:"6px 14px",fontSize:14,color:T.label2,marginLeft:8,cursor:"pointer" }}>
-          📦 {loading?"…":records.length} en inventario ›
-        </div>
+{session && <div onClick={()=>setShowInventory(true)} style={{ marginTop:10,display:"inline-flex",alignItems:"center",gap:7,background:T.bg2,borderRadius:20,padding:"6px 14px",fontSize:14,color:T.label2,marginLeft:8,cursor:"pointer" }}>📦 {loading?"…":records.length} en inventario ›</div>}
+
+
       </div>
 
       <div style={{ padding:"0 16px",display:"flex",flexDirection:"column",gap:20,maxWidth:"100%" }}>
