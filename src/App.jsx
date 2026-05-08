@@ -326,7 +326,7 @@ function HomeScreen({ onNav, session, onLogout }) {
   );
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 20px 0" }}>
         <div style={{ fontSize:13,color:T.label3 }}>{session?`${session.role==="admin"?"👑 ":""}${session.name}`:""}</div>
         {session&&<button onClick={onLogout} style={{ fontSize:14,color:T.blue,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit" }}>Salir</button>}
@@ -600,7 +600,7 @@ function AdminPanel({ currentUser, onBack }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <AppleHeader title="Usuarios" onBack={onBack}
         right={<button onClick={()=>setShowAdd(s=>!s)} style={{ background:"none",border:"none",color:T.blue,fontSize:16,cursor:"pointer",fontFamily:"inherit",fontWeight:500 }}>{showAdd?"Cancelar":"+ Nuevo"}</button>}/>
       <div style={{ padding:"20px 16px",maxWidth:"100%",display:"flex",flexDirection:"column",gap:20 }}>
@@ -678,7 +678,7 @@ function SearchScreen({ onBack }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <AppleHeader title="Buscar" onBack={onBack}/>
       <div style={{ padding:"16px",maxWidth:"100%" }}>
         <div style={{ display:"flex",gap:8,marginBottom:20 }}>
@@ -754,7 +754,7 @@ function ImeiCheckScreen({ onBack }) {
     setLoading(false);
   };
   return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <AppleHeader title="IMEI Check" onBack={onBack}/>
       <div style={{ padding:"24px 16px",maxWidth:"100%" }}>
         <div style={{ fontSize:15,color:T.label3,marginBottom:20,lineHeight:1.6 }}>Verifica si un IMEI está <span style={{ color:T.green,fontWeight:500 }}>Clean</span> o <span style={{ color:T.red,fontWeight:500 }}>Blacklisted</span>.</div>
@@ -843,7 +843,7 @@ function RegisterScreen({ onBack, onSave, session }) {
   const handleDiscard=()=>{ if(window.confirm("¿Eliminar todo el registro sin guardar?")) onBack(); };
 
   if(showFinalize) return (
-    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
+    <div style={{ minHeight:"100vh",background:T.bg,paddingBottom:40,width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden",width:"100vw",maxWidth:"100vw",overflowX:"hidden" }}>
       <AppleHeader title="Finalizar" onBack={()=>setShowFinalize(false)}/>
       <div style={{ padding:"20px 16px",maxWidth:"100%",display:"flex",flexDirection:"column",gap:20 }}>
         <div>
